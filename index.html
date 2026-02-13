@@ -1135,7 +1135,7 @@
                 game.balls -= totalCost;
                 planet.rubberBuildings[buildingKey] += amount;
                 announcePolite(`Purchased ${amount} ${data.name} on ${planet.name}. Total: ${planet.rubberBuildings[buildingKey]}`);
-                updateDisplay();
+                updateDisplay(true);
                 checkAchievements();
             } else {
                 const singleCost = Math.floor(getCost(data.baseCost, currentCount, effectiveMult) * eff.costMult);
@@ -1177,7 +1177,7 @@
                 game.balls -= totalCost;
                 planet.ballBuildings[buildingKey] += amount;
                 announcePolite(`Purchased ${amount} ${data.name} on ${planet.name}. Total: ${planet.ballBuildings[buildingKey]}`);
-                updateDisplay();
+                updateDisplay(true);
                 checkAchievements();
             } else {
                 const singleCost = Math.floor(getCost(data.baseCost, currentCount, costScale) * eff.costMult);
@@ -1197,7 +1197,7 @@
             game.balls += ballsGained;
             game.totalBalls += ballsGained;
             announcePolite(`Sold ${formatNumber(amount)} rubber for ${formatNumber(ballsGained)} balls.`);
-            updateDisplay();
+            updateDisplay(true);
             checkAchievements();
         }
 
@@ -1220,7 +1220,7 @@
                 game.balls -= totalCost;
                 game.celestialStructures[key] += amount;
                 announcePolite(`Built ${amount} ${data.name}. Total: ${game.celestialStructures[key]}`);
-                updateDisplay();
+                updateDisplay(true);
             } else {
                 const singleCost = getCost(data.baseCost, currentCount, data.costMult);
                 announcePolite(`Not enough balls. Need ${formatNumber(singleCost)}, you have ${formatNumber(game.balls)}`);
@@ -1242,7 +1242,7 @@
                     btn.style.background = 'var(--color-success)';
                 }
                 announcePolite(`Upgrade unlocked: ${data.name}. ${data.description}`);
-                setTimeout(() => { updateDisplay(); checkAchievements(); }, 400);
+                setTimeout(() => { updateDisplay(true); checkAchievements(); }, 400);
             } else if (upgrade.purchased) {
                 announcePolite('Upgrade already purchased');
             } else {
@@ -1261,7 +1261,7 @@
             };
             game.planets.push(newPlanet);
             announcePolite(`New planet colonized: ${name}. Role: ${role}`);
-            updateDisplay();
+            updateDisplay(true);
             checkAchievements();
         }
 
@@ -1292,7 +1292,7 @@
 
             announcePolite(`${planet.name} reshaped to ${newRole}. All buildings destroyed.`);
             saveGame();
-            updateDisplay();
+            updateDisplay(true);
         }
 
         // ===== EFFECT SYSTEM =====
@@ -1712,7 +1712,7 @@
             const ballContainer = document.getElementById('ball-buildings-container');
             ballContainer.innerHTML = '';
             delete ballContainer.dataset.planetKey;
-            updateDisplay();
+            updateDisplay(true);
         }
 
         function renderPlanetSelector() {
@@ -1783,7 +1783,7 @@
             game.colonizationCount++;
             showToast(`${disc.name} Colonized!`, `Role: ${role}. Your empire grows!`);
             saveGame();
-            updateDisplay();
+            updateDisplay(true);
             checkAchievements();
         }
 
@@ -2000,7 +2000,7 @@
             });
 
             checkMilestones();
-            updateDisplay();
+            updateDisplay(true);
             renderAchievements();
             saveGame();
             announcePolite('The universe has been reborn. Your prestige bonuses persist.');
@@ -2044,7 +2044,7 @@
                 game.prestige.upgrades[branch]++;
                 showToast('Prestige Upgrade!', `${branch} level ${game.prestige.upgrades[branch]}`);
                 saveGame();
-                updateDisplay();
+                updateDisplay(true);
             } else {
                 announcePolite(`Need ${cost} SP, you have ${game.prestige.singularityPoints}.`);
             }
@@ -2083,7 +2083,7 @@
                 game.balls -= cost;
                 game.shippingProbes.count++;
                 showToast('Shipping Probe Built!', `Fleet size: ${game.shippingProbes.count}`);
-                updateDisplay();
+                updateDisplay(true);
             } else {
                 announcePolite(`Not enough balls. Need ${formatNumber(cost)}.`);
             }
@@ -2095,7 +2095,7 @@
                 game.balls -= cost;
                 game.constructionProbes.count++;
                 showToast('Construction Probe Built!', `Count: ${game.constructionProbes.count}`);
-                updateDisplay();
+                updateDisplay(true);
             } else {
                 announcePolite(`Not enough balls. Need ${formatNumber(cost)}.`);
             }
@@ -2556,9 +2556,26 @@
             checkCosmicTiers();
         }
 
+        const UI_FAST_INTERVAL = 120;
+        const UI_FULL_INTERVAL = 800;
+        let lastFastUi = 0;
+        let lastFullUi = 0;
+
+        function isPanelActive(id) {
+            const panel = document.getElementById(id);
+            if (!panel || panel.style.display === 'none') return false;
+            return !(game.panelStates && game.panelStates[id] === false);
+        }
+
         // Display functions
-        function updateDisplay() {
+        function updateDisplay(forceFull) {
             if (selectedPlanetIndex >= game.planets.length) selectedPlanetIndex = 0;
+
+            const now = performance.now();
+            const force = forceFull === true;
+            const doFast = force || now - lastFastUi >= UI_FAST_INTERVAL;
+            if (!doFast) return;
+            lastFastUi = now;
 
             const eff = getEffects();
             const clickAmount = Math.floor((1 + eff.clickAdd) * eff.cosmicClickMult);
@@ -2617,7 +2634,7 @@
 
             // Sell rubber button visibility
             const sellContainer = document.getElementById('sell-rubber-container');
-            if (sellContainer) {
+            if (sellContainer && isPanelActive('rubber-panel')) {
                 const showSell = game.totalBalls < 100000 || getTotalBallBuildings() === 0;
                 sellContainer.style.display = showSell ? '' : 'none';
                 const sellBtn = document.getElementById('sell-rubber-btn');
@@ -2629,16 +2646,34 @@
                 }
             }
 
+            const doFull = force || now - lastFullUi >= UI_FULL_INTERVAL;
+            if (!doFull) return;
+            lastFullUi = now;
+
             renderPlanetSelector();
-            renderSupplyChain();
-            renderRubberBuildings();
-            renderBallBuildings();
-            renderUpgrades();
-            renderPlanets();
-            renderLogistics();
-            renderCosmic();
-            renderPrestige();
-            renderProductionStatus();
+            if (isPanelActive('rubber-panel')) {
+                renderSupplyChain();
+                renderRubberBuildings();
+            }
+            if (isPanelActive('production-panel')) {
+                renderBallBuildings();
+                renderProductionStatus();
+            }
+            if (isPanelActive('upgrades-panel')) {
+                renderUpgrades();
+            }
+            if (isPanelActive('planets-panel')) {
+                renderPlanets();
+            }
+            if (isPanelActive('logistics-panel')) {
+                renderLogistics();
+            }
+            if (isPanelActive('cosmic-panel')) {
+                renderCosmic();
+            }
+            if (isPanelActive('prestige-panel')) {
+                renderPrestige();
+            }
         }
 
         function renderSupplyChain() {
@@ -3179,7 +3214,7 @@
                         btn.appendChild(badge);
                         btn.addEventListener('click', () => {
                             upgradeTabFilter = cat;
-                            updateDisplay();
+                            updateDisplay(true);
                         });
                         tabContainer.appendChild(btn);
                     });
@@ -3512,14 +3547,14 @@
                 pauseBtn.className = 'btn btn-small';
                 pauseBtn.id = 'pause-construction-btn';
                 pauseBtn.style.marginBottom = '10px';
-                pauseBtn.addEventListener('click', () => {
-                    game.constructionProbes.paused = !game.constructionProbes.paused;
-                    if (game.constructionProbes.paused) {
-                        game.constructionProbes.assignments = [];
-                    }
-                    updateDisplay();
-                });
-                container.appendChild(pauseBtn);
+                    pauseBtn.addEventListener('click', () => {
+                        game.constructionProbes.paused = !game.constructionProbes.paused;
+                        if (game.constructionProbes.paused) {
+                            game.constructionProbes.assignments = [];
+                        }
+                        updateDisplay(true);
+                    });
+                    container.appendChild(pauseBtn);
 
                 const conBtn = document.createElement('button');
                 conBtn.className = 'btn';
@@ -4108,7 +4143,7 @@
                     b.classList.toggle('active', b.dataset.amount === val);
                     b.setAttribute('aria-pressed', b.dataset.amount === val ? 'true' : 'false');
                 });
-                updateDisplay();
+                updateDisplay(true);
             });
         });
 
@@ -4139,7 +4174,7 @@
         function initRender() {
             initCollapsiblePanels();
             checkMilestones();
-            updateDisplay();
+            updateDisplay(true);
             renderAchievements();
             if (wasLoaded) {
                 announcePolite('Game loaded. Welcome back to Bouncing Ball Universe!');
