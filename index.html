@@ -3483,22 +3483,24 @@
                 container.dataset.built = 'true';
 
                 // Celestial body tier list
-                const tierList = document.createElement('div');
+                const tierList = document.createElement('ul');
                 tierList.id = 'cosmic-tier-list';
+                tierList.setAttribute('aria-label', 'Celestial body tiers');
+                tierList.style.cssText = 'list-style: none; margin: 0; padding: 0;';
                 CELESTIAL_TIERS.forEach((tier, i) => {
-                    const div = document.createElement('div');
-                    div.dataset.tierId = i;
-                    div.style.cssText = 'padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;';
+                    const li = document.createElement('li');
+                    li.dataset.tierId = i;
+                    li.style.cssText = 'padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;';
                     const label = document.createElement('span');
                     label.dataset.tierLabel = i;
                     label.style.fontWeight = '600';
-                    div.appendChild(label);
+                    li.appendChild(label);
                     const info = document.createElement('span');
                     info.dataset.tierInfo = i;
                     info.style.fontSize = '0.9em';
                     info.style.color = 'var(--color-text-secondary)';
-                    div.appendChild(info);
-                    tierList.appendChild(div);
+                    li.appendChild(info);
+                    tierList.appendChild(li);
                 });
                 container.appendChild(tierList);
 
@@ -3508,8 +3510,10 @@
                 structHeader.style.cssText = 'margin-top: 20px; color: var(--color-accent);';
                 container.appendChild(structHeader);
 
-                const structContainer = document.createElement('div');
+                const structContainer = document.createElement('ul');
                 structContainer.id = 'celestial-structures-container';
+                structContainer.setAttribute('aria-label', 'Celestial structures');
+                structContainer.style.cssText = 'list-style: none; margin: 0; padding: 0;';
                 container.appendChild(structContainer);
             }
 
@@ -3542,7 +3546,7 @@
                     let row = structContainer.querySelector(`[data-struct-key="${key}"]`);
 
                     if (!row && unlocked) {
-                        row = document.createElement('div');
+                        row = document.createElement('li');
                         row.dataset.structKey = key;
                         row.style.cssText = 'padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--color-border); background: var(--color-bg-tertiary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;';
 
