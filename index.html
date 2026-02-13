@@ -516,6 +516,10 @@
                 <span class="stat-label">Total Planets:</span>
                 <span class="stat-value" id="planet-count">1</span>
             </div>
+            <div class="stat-item" id="next-stage" style="display: none;">
+                <span class="stat-label">Next Stage:</span>
+                <span class="stat-value" id="next-stage-text"></span>
+            </div>
             <div style="margin-top: 15px;">
                 <button class="btn" id="collect-btn" aria-label="Bounce to collect balls manually">
                     🎾 Bounce! (Collect Balls)
@@ -682,11 +686,11 @@
         // ===== BUILDING DATA =====
         const rubberBuildingData = {
             extractor: { name: 'Oil Extractor', description: 'Pumps crude oil from deep reservoirs', baseCost: 20, costMult: 1.15, produces: 'crude', consumes: null, rate: 1, unlockAt: 200 },
-            cracker: { name: 'Cracking Furnace', description: 'Cracks hydrocarbons into monomers', baseCost: 40, costMult: 1.15, produces: 'monomers', consumes: 'crude', rate: 1, unlockAt: 1000 },
-            reactor: { name: 'Polymerization Reactor', description: 'Polymerizes monomers into long chains', baseCost: 80, costMult: 1.15, produces: 'polymer', consumes: 'monomers', rate: 1, unlockAt: 2500 },
-            mixer: { name: 'Compounding Mixer', description: 'Mixes polymer with fillers and curatives', baseCost: 150, costMult: 1.15, produces: 'compound', consumes: 'polymer', rate: 1, unlockAt: 5000 },
-            press: { name: 'Vulcanization Press', description: 'Cross-links polymer chains with heat and sulfur', baseCost: 300, costMult: 1.15, produces: 'finishedRubber', consumes: 'compound', rate: 1, unlockAt: 10000 },
-            forming: { name: 'Rubber Forming Plant', description: 'Shapes and quality-checks finished rubber', baseCost: 500, costMult: 1.15, produces: 'rubber', consumes: 'finishedRubber', rate: 1, unlockAt: 25000 }
+            cracker: { name: 'Cracking Furnace', description: 'Cracks hydrocarbons into monomers', baseCost: 40, costMult: 1.15, produces: 'monomers', consumes: 'crude', rate: 1, unlockAt: 200 },
+            reactor: { name: 'Polymerization Reactor', description: 'Polymerizes monomers into long chains', baseCost: 80, costMult: 1.15, produces: 'polymer', consumes: 'monomers', rate: 1, unlockAt: 200 },
+            mixer: { name: 'Compounding Mixer', description: 'Mixes polymer with fillers and curatives', baseCost: 150, costMult: 1.15, produces: 'compound', consumes: 'polymer', rate: 1, unlockAt: 200 },
+            press: { name: 'Vulcanization Press', description: 'Cross-links polymer chains with heat and sulfur', baseCost: 300, costMult: 1.15, produces: 'finishedRubber', consumes: 'compound', rate: 1, unlockAt: 200 },
+            forming: { name: 'Rubber Forming Plant', description: 'Shapes and quality-checks finished rubber', baseCost: 500, costMult: 1.15, produces: 'rubber', consumes: 'finishedRubber', rate: 1, unlockAt: 200 }
         };
 
         const ballBuildingData = {
@@ -1408,13 +1412,7 @@
             { id: 'upgrades', test: () => game.totalBalls >= 50, title: 'Upgrades Available!', desc: 'New ways to boost your production.', show: ['#upgrades-panel'] },
             { id: 'achievements', test: () => game.totalBalls >= 10, title: 'Achievements!', desc: 'Track your progress.', show: ['#achievements-panel'] },
             { id: 'stat_rubber', test: () => game.totalBalls >= 200, show: ['#stat-rubber', '#stat-rps'] },
-            { id: 'rubber_panel', test: () => game.totalBalls >= 200, title: 'Rubber Supply Chain!', desc: 'Build your rubber empire.', show: ['#rubber-panel'] },
-            { id: 'extractor', test: () => game.totalBalls >= 200, title: 'Oil Extractor Unlocked!', desc: 'Start pumping crude oil.' },
-            { id: 'cracker', test: () => game.totalBalls >= 1000, title: 'Cracking Furnace Unlocked!', desc: 'Convert crude into monomers.' },
-            { id: 'reactor', test: () => game.totalBalls >= 2500, title: 'Polymerization Reactor Unlocked!', desc: 'Chain those monomers together.' },
-            { id: 'mixer', test: () => game.totalBalls >= 5000, title: 'Compounding Mixer Unlocked!', desc: 'Mix in the secret ingredients.' },
-            { id: 'press', test: () => game.totalBalls >= 10000, title: 'Vulcanization Press Unlocked!', desc: 'Heat and pressure!' },
-            { id: 'forming', test: () => game.totalBalls >= 25000, title: 'Forming Plant Unlocked!', desc: 'Your rubber pipeline is complete!' },
+            { id: 'rubber_panel', test: () => game.totalBalls >= 200, title: 'Rubber Supply Chain Unlocked!', desc: 'The full rubber pipeline is yours to command.', show: ['#rubber-panel'] },
             { id: 'stat_bps', test: () => game.totalBalls >= 50000, show: ['#stat-bps'] },
             { id: 'ball_panel', test: () => game.totalBalls >= 50000, title: 'Ball Factory Unlocked!', desc: 'Automated ball production begins!', show: ['#production-panel'] },
             { id: 'advancedFactory', test: () => game.totalBalls >= 150000, title: 'Advanced Factory Unlocked!', desc: 'High-efficiency manufacturing.' },
@@ -1430,6 +1428,32 @@
             { id: 'celestial_galaxy', test: () => game.cosmic.currentTier >= 7, title: 'Galactic Formation!', desc: 'A bouncy galaxy spirals into existence!' },
             { id: 'prestige_panel', test: () => game.prestige.singularityCount > 0 || game.cosmic.currentTier >= 9, title: 'Singularity!', desc: 'Collapse the universe for ultimate power.', show: ['#prestige-panel'] }
         ];
+
+        const progressionStages = [
+            { threshold: 10, name: 'Achievements', reached: () => game.totalBalls >= 10 },
+            { threshold: 50, name: 'Upgrades', reached: () => game.totalBalls >= 50 },
+            { threshold: 200, name: 'Rubber Supply Chain', reached: () => game.totalBalls >= 200 },
+            { threshold: 50000, name: 'Ball Production', reached: () => game.totalBalls >= 50000 },
+            { threshold: 150000, name: 'Advanced Factory', reached: () => game.totalBalls >= 150000 },
+            { threshold: 500000, name: 'Sentient Ball Hive', reached: () => game.totalBalls >= 500000 },
+            { threshold: 5000000, name: 'City of Factories', reached: () => game.totalBalls >= 5000000 },
+            { threshold: 1000000000, name: 'Dyson Sphere Foundry', reached: () => game.totalBalls >= 1000000000 },
+            { threshold: 5000000000, name: 'Cosmic Harvester', reached: () => game.totalBalls >= 5000000000 },
+            { threshold: 1e13, name: 'Celestial Bodies', reached: () => game.totalBalls >= 1e13 }
+        ];
+
+        function updateNextStage() {
+            const el = document.getElementById('next-stage');
+            const textEl = document.getElementById('next-stage-text');
+            const next = progressionStages.find(s => !s.reached());
+            if (!next) {
+                el.style.display = 'none';
+                return;
+            }
+            el.style.display = '';
+            const remaining = next.threshold - game.totalBalls;
+            textEl.textContent = next.name + ' (' + formatNumber(remaining) + ' more balls)';
+        }
 
         function checkMilestones() {
             milestones.forEach(m => {
@@ -1800,21 +1824,40 @@
 
         function checkCosmicTiers() {
             const pe = getPrestigeEffects();
-            while (game.cosmic.currentTier < CELESTIAL_TIERS.length &&
-                   game.totalBalls >= CELESTIAL_TIERS[game.cosmic.currentTier].threshold * pe.cosmicThresholdMult) {
-                const tier = CELESTIAL_TIERS[game.cosmic.currentTier];
-                game.cosmic.currentTier++;
-                // Increment celestial body count (except singularity which has no key)
-                if (tier.key) {
-                    game.celestialBodies[tier.key]++;
-                    const bodyCount = game.celestialBodies[tier.key];
-                    showToast(`${tier.name} Formed!`, `${tier.name} #${bodyCount} - ${getCosmicMultiplier()}x production!`);
-                } else {
-                    showToast(`${tier.name} Reached!`, `${getCosmicMultiplier()}x production multiplier!`);
+            let changed = true;
+            while (changed) {
+                changed = false;
+                // First: advance to the next tier if threshold met
+                while (game.cosmic.currentTier < CELESTIAL_TIERS.length &&
+                       game.totalBalls >= CELESTIAL_TIERS[game.cosmic.currentTier].threshold * pe.cosmicThresholdMult) {
+                    const tier = CELESTIAL_TIERS[game.cosmic.currentTier];
+                    game.cosmic.currentTier++;
+                    changed = true;
+                    if (tier.key) {
+                        game.celestialBodies[tier.key]++;
+                        showToast(`${tier.name} Formed!`, `${tier.name} #${game.celestialBodies[tier.key]} - ${getCosmicMultiplier()}x production!`);
+                    } else {
+                        showToast(`${tier.name} Reached!`, `${getCosmicMultiplier()}x production multiplier!`);
+                    }
+                    if (tier.resetKey) {
+                        game.celestialBodies[tier.resetKey] = 0;
+                    }
                 }
-                // Cascading reset: reset the previous tier's bodies to 0
-                if (tier.resetKey) {
-                    game.celestialBodies[tier.resetKey] = 0;
+                // Then: within the current tier, award extra bodies for each
+                // additional multiple of the tier's threshold
+                if (game.cosmic.currentTier > 0 && game.cosmic.currentTier < CELESTIAL_TIERS.length) {
+                    const prevTier = CELESTIAL_TIERS[game.cosmic.currentTier - 1];
+                    if (prevTier.key) {
+                        const threshold = prevTier.threshold * pe.cosmicThresholdMult;
+                        const earned = Math.floor(game.totalBalls / threshold);
+                        const current = game.celestialBodies[prevTier.key];
+                        if (earned > current) {
+                            const gain = earned - current;
+                            game.celestialBodies[prevTier.key] = earned;
+                            showToast(`${prevTier.name} Formed!`, `+${gain} ${prevTier.name}${gain > 1 ? 's' : ''} (total: ${earned})`);
+                            changed = true;
+                        }
+                    }
                 }
             }
         }
@@ -2500,6 +2543,8 @@
                 (game.probes.discoveredPlanets.length > 0 ? ` / ${game.probes.discoveredPlanets.length} discovered` : '') +
                 synergyText + empireText;
 
+            updateNextStage();
+
             // Sell rubber button visibility
             const sellContainer = document.getElementById('sell-rubber-container');
             if (sellContainer) {
@@ -2698,29 +2743,37 @@
                 const count = planet.rubberBuildings[key];
                 const pe = getPrestigeEffects();
                 const costScale = Math.max(1.01, data.costMult - (eff.costScaleReduction[key] || 0) - pe.costScaleReduction);
+                const cap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : 200;
+                const remaining = cap - count;
+                const atCap = remaining <= 0;
+
                 let displayAmount = 1;
-                let displayCost;
-                const hybridCap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : Infinity;
-                const remaining = hybridCap - count;
-                if (buyAmount === 'max') {
-                    const maxInfo = getMaxAffordable(data.baseCost, count, costScale, game.balls / eff.costMult);
-                    displayAmount = Math.min(maxInfo.count, remaining);
-                    if (displayAmount <= 0) displayAmount = 1;
-                    displayCost = Math.floor(getBulkCost(data.baseCost, count, costScale, displayAmount) * eff.costMult);
-                } else {
-                    displayAmount = Math.min(buyAmount, remaining);
-                    if (displayAmount <= 0) displayAmount = 1;
+                let displayCost = 0;
+                if (!atCap) {
+                    if (buyAmount === 'max') {
+                        const maxInfo = getMaxAffordable(data.baseCost, count, costScale, game.balls / eff.costMult);
+                        displayAmount = Math.min(maxInfo.count, remaining);
+                        if (displayAmount <= 0) displayAmount = 1;
+                    } else {
+                        displayAmount = Math.min(buyAmount, remaining);
+                        if (displayAmount <= 0) displayAmount = 1;
+                    }
                     displayCost = Math.floor(getBulkCost(data.baseCost, count, costScale, displayAmount) * eff.costMult);
                 }
-                const canAfford = game.balls >= displayCost;
+                const canAfford = !atCap && game.balls >= displayCost;
 
                 const countSpan = document.getElementById(`rubber-count-${key}`);
-                if (countSpan) countSpan.textContent = `Owned: ${count}`;
+                if (countSpan) countSpan.textContent = `Owned: ${count}` + (atCap ? ` (cap ${cap})` : '');
 
                 const btn = document.getElementById(`rubber-btn-${key}`);
                 if (btn) {
                     btn.disabled = !canAfford;
-                    const label = displayAmount > 1 ? `Buy ${displayAmount} for ${formatNumber(displayCost)} balls` : `Buy for ${formatNumber(displayCost)} balls`;
+                    let label;
+                    if (atCap) {
+                        label = `Cap reached (${cap})`;
+                    } else {
+                        label = displayAmount > 1 ? `Buy ${displayAmount} for ${formatNumber(displayCost)} balls` : `Buy for ${formatNumber(displayCost)} balls`;
+                    }
                     btn.setAttribute('aria-label', `${label}. Currently owned: ${count}`);
                     btn.textContent = label;
                 }
@@ -2823,25 +2876,27 @@
                 const count = planet.ballBuildings[key];
                 const factoryMult = 1 + (eff.factorySpeed[key] || 0);
                 const costScale = Math.max(1.01, data.costMult - pe.costScaleReduction);
-                const ballCap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : Infinity;
+                const ballCap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : 200;
                 const ballRemaining = ballCap - count;
+                const bAtCap = ballRemaining <= 0;
 
                 let bDisplayAmount = 1;
-                let bDisplayCost;
-                if (buyAmount === 'max') {
-                    const maxInfo = getMaxAffordable(data.baseCost, count, costScale, game.balls / eff.costMult);
-                    bDisplayAmount = Math.min(maxInfo.count, ballRemaining);
-                    if (bDisplayAmount <= 0) bDisplayAmount = 1;
-                    bDisplayCost = Math.floor(getBulkCost(data.baseCost, count, costScale, bDisplayAmount) * eff.costMult);
-                } else {
-                    bDisplayAmount = Math.min(buyAmount, ballRemaining);
-                    if (bDisplayAmount <= 0) bDisplayAmount = 1;
+                let bDisplayCost = 0;
+                if (!bAtCap) {
+                    if (buyAmount === 'max') {
+                        const maxInfo = getMaxAffordable(data.baseCost, count, costScale, game.balls / eff.costMult);
+                        bDisplayAmount = Math.min(maxInfo.count, ballRemaining);
+                        if (bDisplayAmount <= 0) bDisplayAmount = 1;
+                    } else {
+                        bDisplayAmount = Math.min(buyAmount, ballRemaining);
+                        if (bDisplayAmount <= 0) bDisplayAmount = 1;
+                    }
                     bDisplayCost = Math.floor(getBulkCost(data.baseCost, count, costScale, bDisplayAmount) * eff.costMult);
                 }
-                const canAfford = game.balls >= bDisplayCost;
+                const canAfford = !bAtCap && game.balls >= bDisplayCost;
 
                 const countSpan = document.getElementById(`ball-count-${key}`);
-                if (countSpan) countSpan.textContent = `Owned: ${count}`;
+                if (countSpan) countSpan.textContent = `Owned: ${count}` + (bAtCap ? ` (cap ${ballCap})` : '');
 
                 const ballsSpan = document.getElementById(`ball-stat-balls-${key}`);
                 if (ballsSpan) ballsSpan.textContent = `Balls: ${formatNumber(data.ballsPerSec * factoryMult * eff.ballMult)}/sec`;
@@ -2855,7 +2910,12 @@
                 const btn = document.getElementById(`ball-btn-${key}`);
                 if (btn) {
                     btn.disabled = !canAfford;
-                    const bLabel = bDisplayAmount > 1 ? `Buy ${bDisplayAmount} for ${formatNumber(bDisplayCost)} balls` : `Buy for ${formatNumber(bDisplayCost)} balls`;
+                    let bLabel;
+                    if (bAtCap) {
+                        bLabel = `Cap reached (${ballCap})`;
+                    } else {
+                        bLabel = bDisplayAmount > 1 ? `Buy ${bDisplayAmount} for ${formatNumber(bDisplayCost)} balls` : `Buy for ${formatNumber(bDisplayCost)} balls`;
+                    }
                     btn.setAttribute('aria-label', `${bLabel}. Currently owned: ${count}`);
                     btn.textContent = bLabel;
                 }
