@@ -1532,6 +1532,9 @@
         // Save/Load system
         function saveGame() {
             if (resetting) return;
+            const prestigeSave = Object.assign({}, game.prestige, {
+                bestTime: Number.isFinite(game.prestige.bestTime) ? game.prestige.bestTime : null
+            });
             const saveData = {
                 balls: game.balls,
                 totalBalls: game.totalBalls,
@@ -1547,7 +1550,7 @@
                 cosmic: game.cosmic,
                 celestialBodies: game.celestialBodies,
                 celestialStructures: game.celestialStructures,
-                prestige: game.prestige,
+                prestige: prestigeSave,
                 sandbox: game.sandbox,
                 upgrades: game.upgrades,
                 achievements: game.achievements,
@@ -1643,6 +1646,9 @@
                     Object.assign(game.prestige, s.prestige);
                     if (!game.prestige.upgrades) game.prestige.upgrades = { production: 0, efficiency: 0, logistics: 0, discovery: 0, cosmic: 0 };
                     if (!game.prestige.runStartTime) game.prestige.runStartTime = Date.now();
+                    if (!Number.isFinite(game.prestige.bestTime) || game.prestige.bestTime <= 0) {
+                        game.prestige.bestTime = Infinity;
+                    }
                 }
                 if (s.sandbox) game.sandbox = true;
                 if (s.upgrades) {
