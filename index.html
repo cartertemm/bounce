@@ -709,14 +709,14 @@
         };
 
         const celestialStructureData = {
-            lunarQuarry: { name: 'Lunar Quarry', description: 'Mines bouncy material from moon cores', baseCost: 1e13, costMult: 1.20, ballsPerSec: 1e6, tier: 1 },
-            planetaryCoreTap: { name: 'Planetary Core Tap', description: 'Taps planetary cores for ball energy', baseCost: 1e16, costMult: 1.20, ballsPerSec: 1e9, tier: 2 },
-            stellarForge: { name: 'Stellar Forge', description: 'Forges balls from stellar plasma', baseCost: 1e19, costMult: 1.20, ballsPerSec: 1e12, tier: 3 },
-            nebulaCollector: { name: 'Nebula Collector', description: 'Harvests ball matter from stellar remnants', baseCost: 1e22, costMult: 1.20, ballsPerSec: 1e15, tier: 4 },
-            accretionDiskHarvester: { name: 'Accretion Disk Harvester', description: 'Siphons ball energy from black hole accretion disks', baseCost: 1e25, costMult: 1.20, ballsPerSec: 1e18, tier: 5 },
-            hawkingRadiationConverter: { name: 'Hawking Radiation Converter', description: 'Converts Hawking radiation into pure balls', baseCost: 1e28, costMult: 1.20, ballsPerSec: 1e21, tier: 6 },
-            darkMatterConverter: { name: 'Dark Matter Converter', description: 'Transmutes dark matter into bouncy matter', baseCost: 1e31, costMult: 1.20, ballsPerSec: 1e24, tier: 7 },
-            cosmicStringResonator: { name: 'Cosmic String Resonator', description: 'Vibrates cosmic strings to produce infinite balls', baseCost: 1e34, costMult: 1.20, ballsPerSec: 1e27, tier: 8 }
+            lunarQuarry: { name: 'Lunar Quarry', description: 'Mines bouncy material from moon cores', baseCost: 1e13, costMult: 1.20, ballsPerSec: 1e9, tier: 1 },
+            planetaryCoreTap: { name: 'Planetary Core Tap', description: 'Taps planetary cores for ball energy', baseCost: 1e16, costMult: 1.20, ballsPerSec: 1e12, tier: 2 },
+            stellarForge: { name: 'Stellar Forge', description: 'Forges balls from stellar plasma', baseCost: 1e19, costMult: 1.20, ballsPerSec: 1e15, tier: 3 },
+            nebulaCollector: { name: 'Nebula Collector', description: 'Harvests ball matter from stellar remnants', baseCost: 1e22, costMult: 1.20, ballsPerSec: 1e18, tier: 4 },
+            accretionDiskHarvester: { name: 'Accretion Disk Harvester', description: 'Siphons ball energy from black hole accretion disks', baseCost: 1e25, costMult: 1.20, ballsPerSec: 1e21, tier: 5 },
+            hawkingRadiationConverter: { name: 'Hawking Radiation Converter', description: 'Converts Hawking radiation into pure balls', baseCost: 1e28, costMult: 1.20, ballsPerSec: 1e24, tier: 6 },
+            darkMatterConverter: { name: 'Dark Matter Converter', description: 'Transmutes dark matter into bouncy matter', baseCost: 1e31, costMult: 1.20, ballsPerSec: 1e27, tier: 7 },
+            cosmicStringResonator: { name: 'Cosmic String Resonator', description: 'Vibrates cosmic strings to produce infinite balls', baseCost: 1e34, costMult: 1.20, ballsPerSec: 1e30, tier: 8 }
         };
 
         // ===== UPGRADE DATA (101 total) =====
@@ -1234,6 +1234,7 @@
             if (!upgrade.purchased && game.balls >= data.cost) {
                 game.balls -= data.cost;
                 upgrade.purchased = true;
+                saveGame();
                 // Flash the button before it disappears
                 const btn = document.getElementById(`upgrade-btn-${upgradeKey}`);
                 if (btn) {
@@ -1290,6 +1291,7 @@
             planet.role = newRole;
 
             announcePolite(`${planet.name} reshaped to ${newRole}. All buildings destroyed.`);
+            saveGame();
             updateDisplay();
         }
 
@@ -1600,6 +1602,8 @@
                 if (s.probes) {
                     Object.assign(game.probes, s.probes);
                     if (!game.probes.discoveredPlanets) game.probes.discoveredPlanets = [];
+                    // Trim excess discovered planets from old saves
+                    if (game.probes.discoveredPlanets.length > 20) game.probes.discoveredPlanets.length = 20;
                 }
                 game.colonizationCount = s.colonizationCount || 0;
                 if (s.shippingProbes) game.shippingProbes.count = s.shippingProbes.count || 0;
@@ -1672,6 +1676,7 @@
                                 offlineCycles++;
                                 const count = (eff.replicationDouble ? 2 : 1) + eff.probeDiscoverBonus;
                                 for (let i = 0; i < count; i++) {
+                                    if (game.probes.discoveredPlanets.length >= 20) break;
                                     const newName = generatePlanetName();
                                     game.probes.discoveredPlanets.push({
                                         id: `planet_${Date.now()}_offline_${i}`,
@@ -1741,7 +1746,9 @@
 
         // Colonization milestones: 500K * 3^n
         function getColonizationMilestone(n) {
-            return 500000 * Math.pow(1.5, n);
+            // Dampened exponent: grows like 1.5^n early, flattens at high n
+            const effectiveN = n / (1 + n * 0.005);
+            return 500000 * Math.pow(1.5, effectiveN);
         }
         function canColonizeNext() {
             const milestone = getColonizationMilestone(game.colonizationCount);
@@ -1769,6 +1776,7 @@
             game.probes.discoveredPlanets.splice(discoveredIndex, 1);
             game.colonizationCount++;
             showToast(`${disc.name} Colonized!`, `Role: ${role}. Your empire grows!`);
+            saveGame();
             updateDisplay();
             checkAchievements();
         }
@@ -1782,6 +1790,7 @@
             game.balls -= 500000;
             game.probes.launched = true;
             game.probes.travelProgress = 0;
+            saveGame();
             showToast('Von Neumann Probe Launched!', 'Traveling to the nearest star system...');
         }
 
@@ -1813,13 +1822,13 @@
                 // Discover planets: base 1, +1 from replicationDouble, +N from probeDiscoverBonus
                 const count = (eff.replicationDouble ? 2 : 1) + eff.probeDiscoverBonus;
                 for (let i = 0; i < count; i++) {
+                    if (game.probes.discoveredPlanets.length >= 20) break;
                     const newName = generatePlanetName();
                     game.probes.discoveredPlanets.push({
                         id: `planet_${Date.now()}_${i}`,
                         name: newName
                     });
                 }
-                // Silent — planet count stat shows live
             }
         }
 
@@ -1981,7 +1990,7 @@
              'production-status', 'upgrades-container', 'upgrade-tabs', 'planets-container', 'logistics-container',
              'cosmic-container', 'celestial-structures-container', 'prestige-container'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) { el.innerHTML = ''; delete el.dataset.built; delete el.dataset.planetKey; delete el.dataset.tabKey; }
+                if (el) { el.innerHTML = ''; delete el.dataset.built; delete el.dataset.planetKey; delete el.dataset.tabKey; delete el.dataset.builtCount; delete el.dataset.state; delete el.dataset.catKey; delete el.dataset.sortKey; }
             });
 
             checkMilestones();
@@ -2685,7 +2694,7 @@
                 const stepDiv = document.getElementById(`chain-value-${step.id}`);
                 if (!stepDiv) return;
                 const parentDiv = stepDiv.parentElement;
-                const unlocked = game.totalBalls >= step.unlockAt || step.value > 0;
+                const unlocked = game.totalBalls >= step.unlockAt || step.value > 0 || step.supply > 0 || step.demand > 0;
                 parentDiv.style.display = unlocked ? '' : 'none';
                 if (!unlocked) return;
 
@@ -3137,30 +3146,27 @@
                 });
             }
 
-            // Render tabs
+            // Render tabs — build once per category set, update badges in place
             const tabContainer = document.getElementById('upgrade-tabs');
             if (tabContainer) {
                 const categories = ['All', ...Object.keys(categoryCounts).sort()];
-                const tabKey = categories.join('|') + '|' + JSON.stringify(categoryAffordable);
-                if (tabContainer.dataset.tabKey !== tabKey) {
-                    tabContainer.dataset.tabKey = tabKey;
+                const catKey = categories.join('|');
+                // Only rebuild tab buttons when categories change (new upgrade types unlocked)
+                if (tabContainer.dataset.catKey !== catKey) {
+                    tabContainer.dataset.catKey = catKey;
                     tabContainer.innerHTML = '';
                     categories.forEach(cat => {
                         const btn = document.createElement('button');
-                        btn.className = 'upgrade-tab-btn' + (upgradeTabFilter === cat ? ' active' : '');
+                        btn.className = 'upgrade-tab-btn';
                         btn.setAttribute('role', 'tab');
-                        btn.setAttribute('aria-selected', upgradeTabFilter === cat ? 'true' : 'false');
                         btn.setAttribute('aria-label', `Show ${cat} upgrades`);
-                        btn.textContent = cat;
-                        const affordable = cat === 'All'
-                            ? Object.values(categoryAffordable).reduce((a, b) => a + b, 0)
-                            : (categoryAffordable[cat] || 0);
-                        if (affordable > 0) {
-                            const badge = document.createElement('span');
-                            badge.className = 'tab-badge';
-                            badge.textContent = affordable;
-                            btn.appendChild(badge);
-                        }
+                        btn.dataset.tabCat = cat;
+                        const textNode = document.createTextNode(cat);
+                        btn.appendChild(textNode);
+                        const badge = document.createElement('span');
+                        badge.className = 'tab-badge';
+                        badge.style.display = 'none';
+                        btn.appendChild(badge);
                         btn.addEventListener('click', () => {
                             upgradeTabFilter = cat;
                             updateDisplay();
@@ -3168,6 +3174,25 @@
                         tabContainer.appendChild(btn);
                     });
                 }
+                // Update active state and badge counts in place
+                Array.from(tabContainer.children).forEach(btn => {
+                    const cat = btn.dataset.tabCat;
+                    const isActive = upgradeTabFilter === cat;
+                    btn.className = 'upgrade-tab-btn' + (isActive ? ' active' : '');
+                    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    const affordable = cat === 'All'
+                        ? Object.values(categoryAffordable).reduce((a, b) => a + b, 0)
+                        : (categoryAffordable[cat] || 0);
+                    const badge = btn.querySelector('.tab-badge');
+                    if (badge) {
+                        if (affordable > 0) {
+                            badge.textContent = affordable;
+                            badge.style.display = '';
+                        } else {
+                            badge.style.display = 'none';
+                        }
+                    }
+                });
             }
         }
 
@@ -3175,148 +3200,172 @@
             const container = document.getElementById('planets-container');
             const eff = getEffects();
 
-            // Structural key: only rebuild DOM when colonized planets or probe state changes
-            // Discovered planets are handled incrementally below to avoid DOM thrashing
-            const structKey = game.planets.map(p => `${p.id}:${p.role}`).join('|')
-                + '|' + game.probes.launched + ':' + game.probes.arrived
-                + '|' + game.colonizationCount;
+            // Build skeleton once — three independent sections
+            if (!container.dataset.built) {
+                container.dataset.built = 'true';
 
-            if (container.dataset.structKey !== structKey) {
-                container.dataset.structKey = structKey;
-                container.innerHTML = '';
-
-                // --- Colonized Planets ---
                 const h3 = document.createElement('h3');
-                h3.textContent = `Colonized Planets (${game.planets.length})`;
+                h3.id = 'planets-header';
                 container.appendChild(h3);
 
-                game.planets.forEach((planet, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'planet-item';
-                    div.dataset.planetIdx = index;
+                const planetList = document.createElement('div');
+                planetList.id = 'planet-list';
+                container.appendChild(planetList);
 
-                    const header = document.createElement('div');
-                    header.className = 'item-header';
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'item-name';
-                    nameSpan.textContent = planet.name;
-                    const roleSpan = document.createElement('span');
-                    roleSpan.className = 'planet-role';
-                    roleSpan.dataset.roleSpan = index;
-                    nameSpan.appendChild(roleSpan);
-                    header.appendChild(nameSpan);
-                    div.appendChild(header);
+                const probeSection = document.createElement('div');
+                probeSection.id = 'probe-section';
+                container.appendChild(probeSection);
 
-                    const stats = document.createElement('div');
-                    stats.className = 'item-stats';
-                    const rbSpan = document.createElement('span');
-                    rbSpan.dataset.planetRb = index;
-                    stats.appendChild(rbSpan);
-                    const bbSpan = document.createElement('span');
-                    bbSpan.dataset.planetBb = index;
-                    stats.appendChild(bbSpan);
-                    const rubberSpan = document.createElement('span');
-                    rubberSpan.dataset.planetRubber = index;
-                    stats.appendChild(rubberSpan);
-                    div.appendChild(stats);
+                const discSection = document.createElement('div');
+                discSection.id = 'discovered-section';
+                discSection.style.display = 'none';
+                container.appendChild(discSection);
 
-                    // Role change buttons
-                    const roleDiv = document.createElement('div');
-                    roleDiv.style.display = 'flex'; roleDiv.style.gap = '8px'; roleDiv.style.flexWrap = 'wrap';
-                    ['rubber', 'ball', 'hybrid'].forEach(role => {
-                        if (planet.role === role) return;
-                        const btn = document.createElement('button');
-                        btn.className = 'btn btn-small';
-                        btn.textContent = role === 'rubber' ? 'Set Rubber World' : role === 'ball' ? 'Set Ball World' : 'Set Hybrid';
-                        btn.addEventListener('click', () => changePlanetRole(index, role));
-                        roleDiv.appendChild(btn);
-                    });
-                    div.appendChild(roleDiv);
-                    container.appendChild(div);
+                const h3disc = document.createElement('h3');
+                h3disc.id = 'discovered-header';
+                h3disc.style.marginTop = '20px';
+                discSection.appendChild(h3disc);
+
+                const mileP = document.createElement('p');
+                mileP.id = 'colonization-milestone';
+                discSection.appendChild(mileP);
+
+                const discList = document.createElement('div');
+                discList.id = 'discovered-list';
+                discSection.appendChild(discList);
+            }
+
+            // --- Colonized Planets: append new ones only ---
+            const planetList = document.getElementById('planet-list');
+            const builtPlanetCount = parseInt(planetList.dataset.builtCount || '0', 10);
+            document.getElementById('planets-header').textContent = `Colonized Planets (${game.planets.length})`;
+
+            for (let index = builtPlanetCount; index < game.planets.length; index++) {
+                const planet = game.planets[index];
+                const div = document.createElement('div');
+                div.className = 'planet-item';
+                div.dataset.planetIdx = index;
+
+                const header = document.createElement('div');
+                header.className = 'item-header';
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'item-name';
+                nameSpan.textContent = planet.name;
+                const roleSpan = document.createElement('span');
+                roleSpan.className = 'planet-role';
+                roleSpan.dataset.roleSpan = index;
+                nameSpan.appendChild(roleSpan);
+                header.appendChild(nameSpan);
+                div.appendChild(header);
+
+                const stats = document.createElement('div');
+                stats.className = 'item-stats';
+                const rbSpan = document.createElement('span');
+                rbSpan.dataset.planetRb = index;
+                stats.appendChild(rbSpan);
+                const bbSpan = document.createElement('span');
+                bbSpan.dataset.planetBb = index;
+                stats.appendChild(bbSpan);
+                const rubberSpan = document.createElement('span');
+                rubberSpan.dataset.planetRubber = index;
+                stats.appendChild(rubberSpan);
+                div.appendChild(stats);
+
+                // Role change buttons — create all 3, hide current role
+                const roleDiv = document.createElement('div');
+                roleDiv.style.display = 'flex'; roleDiv.style.gap = '8px'; roleDiv.style.flexWrap = 'wrap';
+                ['rubber', 'ball', 'hybrid'].forEach(role => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-small';
+                    btn.dataset.roleBtn = `${index}-${role}`;
+                    btn.textContent = role === 'rubber' ? 'Set Rubber World' : role === 'ball' ? 'Set Ball World' : 'Set Hybrid';
+                    btn.style.display = planet.role === role ? 'none' : '';
+                    btn.addEventListener('click', () => changePlanetRole(index, role));
+                    roleDiv.appendChild(btn);
                 });
+                div.appendChild(roleDiv);
+                planetList.appendChild(div);
+            }
+            planetList.dataset.builtCount = game.planets.length;
 
-                // --- Von Neumann Probe Section ---
+            // --- Probe section: rebuild only on state transition ---
+            const probeSection = document.getElementById('probe-section');
+            const probeState = !game.probes.launched ? 'ready' : !game.probes.arrived ? 'traveling' : 'arrived';
+            if (probeSection.dataset.state !== probeState) {
+                probeSection.dataset.state = probeState;
+                probeSection.innerHTML = '';
+
                 const h3probe = document.createElement('h3');
                 h3probe.style.marginTop = '20px';
                 h3probe.textContent = 'Von Neumann Probes';
-                container.appendChild(h3probe);
+                probeSection.appendChild(h3probe);
 
                 if (!game.probes.launched) {
                     const p = document.createElement('p');
                     p.style.color = 'var(--color-text-secondary)';
                     p.textContent = 'Launch a self-replicating probe to discover new worlds. You only need one - it will copy itself!';
-                    container.appendChild(p);
+                    probeSection.appendChild(p);
                     const btn = document.createElement('button');
                     btn.className = 'btn';
                     btn.id = 'probe-launch-btn';
                     btn.textContent = 'Launch Von Neumann Probe (500K balls)';
                     btn.addEventListener('click', launchProbe);
                     btn.disabled = game.balls < 500000;
-                    container.appendChild(btn);
+                    probeSection.appendChild(btn);
                 } else if (!game.probes.arrived) {
                     const p = document.createElement('p');
                     p.id = 'probe-travel-text';
                     p.style.color = 'var(--color-accent)';
-                    container.appendChild(p);
+                    probeSection.appendChild(p);
                     const bar = document.createElement('div');
                     bar.style.cssText = 'background: var(--color-bg-tertiary); border-radius: 4px; height: 20px; overflow: hidden; margin: 10px 0;';
                     const fill = document.createElement('div');
                     fill.id = 'probe-travel-fill';
                     fill.style.cssText = 'background: var(--color-accent); height: 100%; width: 0%; transition: width 0.1s;';
                     bar.appendChild(fill);
-                    container.appendChild(bar);
+                    probeSection.appendChild(bar);
                 } else {
                     const p = document.createElement('p');
                     p.id = 'probe-replication-text';
                     p.style.color = 'var(--color-success)';
-                    container.appendChild(p);
-                }
-
-                // --- Discovered Planets header (built once in structural block) ---
-                if (game.probes.discoveredPlanets.length > 0 || game.probes.launched) {
-                    const h3disc = document.createElement('h3');
-                    h3disc.id = 'discovered-header';
-                    h3disc.style.marginTop = '20px';
-                    container.appendChild(h3disc);
-
-                    const mileP = document.createElement('p');
-                    mileP.id = 'colonization-milestone';
-                    container.appendChild(mileP);
-
-                    const discList = document.createElement('div');
-                    discList.id = 'discovered-list';
-                    container.appendChild(discList);
+                    probeSection.appendChild(p);
                 }
             }
 
-            // --- Discovered Planets: incrementally add new entries ---
-            const discList = document.getElementById('discovered-list');
-            if (discList) {
-                const builtCount = parseInt(discList.dataset.builtCount || '0', 10);
-                for (let i = builtCount; i < game.probes.discoveredPlanets.length; i++) {
-                    const disc = game.probes.discoveredPlanets[i];
-                    const div = document.createElement('div');
-                    div.className = 'planet-item';
-                    div.dataset.discIdx = i;
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'item-name';
-                    nameSpan.textContent = disc.name + ' (Discovered)';
-                    div.appendChild(nameSpan);
+            // --- Discovered Planets: rebuild only when list content changes ---
+            const discSection = document.getElementById('discovered-section');
+            const showDisc = game.probes.discoveredPlanets.length > 0 || game.probes.launched;
+            discSection.style.display = showDisc ? '' : 'none';
 
-                    const btnDiv = document.createElement('div');
-                    btnDiv.dataset.discBtns = i;
-                    btnDiv.style.display = 'flex'; btnDiv.style.gap = '8px'; btnDiv.style.marginTop = '8px'; btnDiv.style.flexWrap = 'wrap';
-                    ['rubber', 'ball', 'hybrid'].forEach(role => {
-                        const btn = document.createElement('button');
-                        btn.className = 'btn btn-small';
-                        btn.textContent = `Colonize as ${role === 'rubber' ? 'Rubber World' : role === 'ball' ? 'Ball World' : 'Hybrid'}`;
-                        btn.addEventListener('click', () => colonizePlanet(i, role));
-                        btnDiv.appendChild(btn);
+            if (showDisc) {
+                const discKey = game.probes.discoveredPlanets.map(d => d.id).join(',');
+                const discList = document.getElementById('discovered-list');
+                if (discList.dataset.discKey !== discKey) {
+                    discList.dataset.discKey = discKey;
+                    discList.innerHTML = '';
+                    game.probes.discoveredPlanets.forEach((disc, i) => {
+                        const div = document.createElement('div');
+                        div.className = 'planet-item';
+                        div.dataset.discIdx = i;
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'item-name';
+                        nameSpan.textContent = disc.name + ' (Discovered)';
+                        div.appendChild(nameSpan);
+
+                        const btnDiv = document.createElement('div');
+                        btnDiv.dataset.discBtns = i;
+                        btnDiv.style.display = 'flex'; btnDiv.style.gap = '8px'; btnDiv.style.marginTop = '8px'; btnDiv.style.flexWrap = 'wrap';
+                        ['rubber', 'ball', 'hybrid'].forEach(role => {
+                            const btn = document.createElement('button');
+                            btn.className = 'btn btn-small';
+                            btn.textContent = `Colonize as ${role === 'rubber' ? 'Rubber World' : role === 'ball' ? 'Ball World' : 'Hybrid'}`;
+                            btn.addEventListener('click', () => colonizePlanet(i, role));
+                            btnDiv.appendChild(btn);
+                        });
+                        div.appendChild(btnDiv);
+                        discList.appendChild(div);
                     });
-                    div.appendChild(btnDiv);
-                    discList.appendChild(div);
                 }
-                discList.dataset.builtCount = game.probes.discoveredPlanets.length;
 
                 const discHeader = document.getElementById('discovered-header');
                 if (discHeader) discHeader.textContent = `Discovered Planets (${game.probes.discoveredPlanets.length})`;
@@ -3331,6 +3380,12 @@
 
                 const roleSpan = container.querySelector(`[data-role-span="${index}"]`);
                 if (roleSpan) { roleSpan.className = `planet-role ${roleClass}`; roleSpan.textContent = planet.role + bonusText; }
+
+                // Update role button visibility (handles role changes without rebuild)
+                ['rubber', 'ball', 'hybrid'].forEach(role => {
+                    const btn = container.querySelector(`[data-role-btn="${index}-${role}"]`);
+                    if (btn) btn.style.display = planet.role === role ? 'none' : '';
+                });
 
                 const rbSpan = container.querySelector(`[data-planet-rb="${index}"]`);
                 if (rbSpan) rbSpan.textContent = `Rubber buildings: ${Object.values(planet.rubberBuildings).reduce((a,b) => a+b, 0)}`;
@@ -4064,8 +4119,8 @@
         // Start game loop
         setInterval(gameLoop, 100);
 
-        // Auto-save every 30 seconds
-        setInterval(saveGame, 30000);
+        // Auto-save every 10 seconds
+        setInterval(saveGame, 10000);
 
         // Save on page close
         window.addEventListener('beforeunload', saveGame);
