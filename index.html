@@ -3175,11 +3175,11 @@
             const container = document.getElementById('planets-container');
             const eff = getEffects();
 
-            // Structural key: only rebuild DOM when planets/probes/colonization structure changes
+            // Structural key: only rebuild DOM when colonized planets or probe state changes
+            // Discovered planets are handled incrementally below to avoid DOM thrashing
             const structKey = game.planets.map(p => `${p.id}:${p.role}`).join('|')
                 + '|' + game.probes.launched + ':' + game.probes.arrived
-                + '|' + game.probes.discoveredPlanets.length + ':' + game.colonizationCount
-                + '|' + canColonizeNext();
+                + '|' + game.colonizationCount;
 
             if (container.dataset.structKey !== structKey) {
                 container.dataset.structKey = structKey;
@@ -3272,40 +3272,54 @@
                     container.appendChild(p);
                 }
 
-                // --- Discovered Planets (awaiting colonization) ---
-                if (game.probes.discoveredPlanets.length > 0) {
+                // --- Discovered Planets header (built once in structural block) ---
+                if (game.probes.discoveredPlanets.length > 0 || game.probes.launched) {
                     const h3disc = document.createElement('h3');
+                    h3disc.id = 'discovered-header';
                     h3disc.style.marginTop = '20px';
-                    h3disc.textContent = `Discovered Planets (${game.probes.discoveredPlanets.length})`;
                     container.appendChild(h3disc);
 
                     const mileP = document.createElement('p');
                     mileP.id = 'colonization-milestone';
                     container.appendChild(mileP);
 
-                    game.probes.discoveredPlanets.forEach((disc, i) => {
-                        const div = document.createElement('div');
-                        div.className = 'planet-item';
-                        div.dataset.discIdx = i;
-                        const nameSpan = document.createElement('span');
-                        nameSpan.className = 'item-name';
-                        nameSpan.textContent = disc.name + ' (Discovered)';
-                        div.appendChild(nameSpan);
-
-                        const btnDiv = document.createElement('div');
-                        btnDiv.dataset.discBtns = i;
-                        btnDiv.style.display = 'flex'; btnDiv.style.gap = '8px'; btnDiv.style.marginTop = '8px'; btnDiv.style.flexWrap = 'wrap';
-                        ['rubber', 'ball', 'hybrid'].forEach(role => {
-                            const btn = document.createElement('button');
-                            btn.className = 'btn btn-small';
-                            btn.textContent = `Colonize as ${role === 'rubber' ? 'Rubber World' : role === 'ball' ? 'Ball World' : 'Hybrid'}`;
-                            btn.addEventListener('click', () => colonizePlanet(i, role));
-                            btnDiv.appendChild(btn);
-                        });
-                        div.appendChild(btnDiv);
-                        container.appendChild(div);
-                    });
+                    const discList = document.createElement('div');
+                    discList.id = 'discovered-list';
+                    container.appendChild(discList);
                 }
+            }
+
+            // --- Discovered Planets: incrementally add new entries ---
+            const discList = document.getElementById('discovered-list');
+            if (discList) {
+                const builtCount = parseInt(discList.dataset.builtCount || '0', 10);
+                for (let i = builtCount; i < game.probes.discoveredPlanets.length; i++) {
+                    const disc = game.probes.discoveredPlanets[i];
+                    const div = document.createElement('div');
+                    div.className = 'planet-item';
+                    div.dataset.discIdx = i;
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'item-name';
+                    nameSpan.textContent = disc.name + ' (Discovered)';
+                    div.appendChild(nameSpan);
+
+                    const btnDiv = document.createElement('div');
+                    btnDiv.dataset.discBtns = i;
+                    btnDiv.style.display = 'flex'; btnDiv.style.gap = '8px'; btnDiv.style.marginTop = '8px'; btnDiv.style.flexWrap = 'wrap';
+                    ['rubber', 'ball', 'hybrid'].forEach(role => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn btn-small';
+                        btn.textContent = `Colonize as ${role === 'rubber' ? 'Rubber World' : role === 'ball' ? 'Ball World' : 'Hybrid'}`;
+                        btn.addEventListener('click', () => colonizePlanet(i, role));
+                        btnDiv.appendChild(btn);
+                    });
+                    div.appendChild(btnDiv);
+                    discList.appendChild(div);
+                }
+                discList.dataset.builtCount = game.probes.discoveredPlanets.length;
+
+                const discHeader = document.getElementById('discovered-header');
+                if (discHeader) discHeader.textContent = `Discovered Planets (${game.probes.discoveredPlanets.length})`;
             }
 
             // --- Update dynamic content without rebuilding DOM ---
