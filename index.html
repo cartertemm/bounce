@@ -1808,7 +1808,7 @@
                         name: newName
                     });
                 }
-                announcePolite(`${count} planet${count > 1 ? 's' : ''} discovered by Von Neumann probes.`);
+                // Silent — planet count stat shows live
             }
         }
 
@@ -1877,7 +1877,7 @@
                         if (earned > current) {
                             const gain = earned - current;
                             game.celestialBodies[prevTier.key] = earned;
-                            announcePolite(`+${gain} ${prevTier.name}${gain > 1 ? 's' : ''} (total: ${earned})`);
+                            // Silent — celestial bodies panel shows live count
                             changed = true;
                         }
                     }
