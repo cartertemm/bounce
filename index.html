@@ -1741,7 +1741,7 @@
 
         // Colonization milestones: 500K * 3^n
         function getColonizationMilestone(n) {
-            return 500000 * Math.pow(3, n);
+            return 500000 * Math.pow(1.5, n);
         }
         function canColonizeNext() {
             const milestone = getColonizationMilestone(game.colonizationCount);
