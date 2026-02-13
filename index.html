@@ -1424,7 +1424,7 @@
             { id: 'logistics_panel', test: () => game.planets.length >= 2, title: 'Logistics Network!', desc: 'Ship rubber between planets and automate construction.', show: ['#logistics-panel'] },
             { id: 'dysonFoundry', test: () => game.totalBalls >= 1000000000, title: 'Dyson Sphere Foundry Unlocked!', desc: 'Harness the power of stars!' },
             { id: 'cosmic_panel', test: () => game.totalBalls >= 1e13, title: 'Celestial Bodies!', desc: 'Your balls are forming celestial bodies!', show: ['#cosmic-panel'] },
-            { id: 'cosmicHarvester', test: () => game.cosmic.currentTier >= 2, title: 'Cosmic Harvester Unlocked!', desc: 'Convert cosmic energy directly into balls!' },
+            { id: 'cosmicHarvester', test: () => game.totalBalls >= 5e9, title: 'Cosmic Harvester Unlocked!', desc: 'Convert cosmic energy directly into balls!' },
             { id: 'celestial_star', test: () => game.cosmic.currentTier >= 3, title: 'Stellar Genesis!', desc: 'Your bouncy star illuminates the cosmos!' },
             { id: 'celestial_blackhole', test: () => game.cosmic.currentTier >= 5, title: 'Event Horizon!', desc: 'A bouncy black hole bends spacetime!' },
             { id: 'celestial_galaxy', test: () => game.cosmic.currentTier >= 7, title: 'Galactic Formation!', desc: 'A bouncy galaxy spirals into existence!' },
@@ -1520,6 +1520,14 @@
                         });
                         Object.keys(ballBuildingData).forEach(key => {
                             if (planet.ballBuildings[key] === undefined) planet.ballBuildings[key] = 0;
+                        });
+                        // Clamp buildings to cap (200 for specialized, hybrid cap for hybrid)
+                        const buildCap = planet.role === 'hybrid' ? 50 : 200;
+                        Object.keys(planet.rubberBuildings).forEach(key => {
+                            if (planet.rubberBuildings[key] > buildCap) planet.rubberBuildings[key] = buildCap;
+                        });
+                        Object.keys(planet.ballBuildings).forEach(key => {
+                            if (planet.ballBuildings[key] > buildCap) planet.ballBuildings[key] = buildCap;
                         });
                         // Migrate: add per-planet resources if missing (old save)
                         if (planet.crude === undefined) {
@@ -2199,24 +2207,15 @@
                 return costCeiling <= 0 || cost <= costCeiling;
             }
 
-            // Pick planet with fewest buildings (actual + pending)
-            let bestPlanet = null;
-            let bestIndex = -1;
-            let fewestBuildings = Infinity;
-
-            game.planets.forEach((planet, index) => {
+            // Try each planet in order of fewest buildings, skip fully-capped planets
+            const planetsByBuildings = game.planets.map((planet, index) => {
                 let total = 0;
                 Object.keys(planet.rubberBuildings).forEach(k => total += planet.rubberBuildings[k] + getPending(index, 'rubber', k));
                 Object.keys(planet.ballBuildings).forEach(k => total += planet.ballBuildings[k] + getPending(index, 'ball', k));
-                if (total < fewestBuildings) {
-                    fewestBuildings = total;
-                    bestPlanet = planet;
-                    bestIndex = index;
-                }
-            });
+                return { planet, index, total };
+            }).sort((a, b) => a.total - b.total);
 
-            if (!bestPlanet) return null;
-            const planet = bestPlanet;
+            for (const { planet, index: bestIndex } of planetsByBuildings) {
             const cap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : 200;
 
             if (planet.role === 'rubber') {
@@ -2236,7 +2235,7 @@
                 let bestKey = null, bestCost = Infinity;
                 Object.keys(ballBuildingData).forEach(key => {
                     if (game.totalBalls < ballBuildingData[key].unlockAt) return;
-                    if (key === 'cosmicHarvester' && game.cosmic.currentTier < 2) return;
+                    if (key === 'cosmicHarvester' && game.totalBalls < 5e9) return;
                     const effective = planet.ballBuildings[key] + getPending(bestIndex, 'ball', key);
                     if (effective >= cap) return;
                     const cost = ballBuildCost(key, effective);
@@ -2276,7 +2275,7 @@
                 let bestKey = null, bestCost = Infinity;
                 Object.keys(ballBuildingData).forEach(key => {
                     if (game.totalBalls < ballBuildingData[key].unlockAt) return;
-                    if (key === 'cosmicHarvester' && game.cosmic.currentTier < 2) return;
+                    if (key === 'cosmicHarvester' && game.totalBalls < 5e9) return;
                     const effective = planet.ballBuildings[key] + getPending(bestIndex, 'ball', key);
                     if (effective < cap) {
                         const cost = ballBuildCost(key, effective);
@@ -2295,6 +2294,7 @@
                 });
                 if (minStage) return { planetIndex: bestIndex, type: 'rubber', key: minStage };
             }
+            } // end for loop over planets
 
             // Fallback: try building cheapest affordable celestial structure
             let bestCelestialKey = null, bestCelestialCost = Infinity;
