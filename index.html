@@ -996,7 +996,8 @@
 
         function getCost(baseCost, count, mult) {
             // Softened cost curve: exponent grows slower at high building counts
-            const effectiveCount = count / (1 + count * 0.005);
+            // Capped at 100 so prices plateau (reached at ~200 buildings)
+            const effectiveCount = Math.min(count / (1 + count * 0.005), 100);
             return Math.floor(baseCost * Math.pow(mult, effectiveCount));
         }
 
@@ -1083,14 +1084,14 @@
             const costScale = Math.max(1.01, data.costMult - (eff.costScaleReduction[buildingKey] || 0) - pe.costScaleReduction);
             const effectiveMult = costScale;
 
-            // Hybrid cap
-            let cap = Infinity;
+            // Building cap: hybrid uses hybrid cap, specialized uses 200
+            let cap = 200;
             if (planet.role === 'hybrid') {
                 cap = 25 + eff.hybridCapAdd;
-                if (currentCount >= cap) {
-                    announcePolite(`Hybrid cap reached (${cap}). Specialize this planet for unlimited buildings.`);
-                    return;
-                }
+            }
+            if (currentCount >= cap) {
+                announcePolite(`Building cap reached (${cap}).${planet.role === 'hybrid' ? ' Specialize this planet for higher cap.' : ''}`);
+                return;
             }
 
             let amount = 1;
@@ -1125,14 +1126,14 @@
             const pe = getPrestigeEffects();
             const costScale = Math.max(1.01, data.costMult - pe.costScaleReduction);
 
-            // Hybrid cap
-            let cap = Infinity;
+            // Building cap: hybrid uses hybrid cap, specialized uses 200
+            let cap = 200;
             if (planet.role === 'hybrid') {
                 cap = 25 + eff.hybridCapAdd;
-                if (currentCount >= cap) {
-                    announcePolite(`Hybrid cap reached (${cap}). Specialize this planet for unlimited buildings.`);
-                    return;
-                }
+            }
+            if (currentCount >= cap) {
+                announcePolite(`Building cap reached (${cap}).${planet.role === 'hybrid' ? ' Specialize this planet for higher cap.' : ''}`);
+                return;
             }
 
             let amount = 1;
@@ -2142,14 +2143,12 @@
                         cost = Math.floor(getCost(data.baseCost, planet.ballBuildings[task.key], ballCostScale) * eff.costMult);
                     }
                     if (game.balls >= cost) {
-                        // Enforce hybrid cap at build time
-                        if (planet.role === 'hybrid') {
-                            const hybridCap = 25 + eff.hybridCapAdd;
-                            const currentCount = task.type === 'rubber' ? planet.rubberBuildings[task.key] : planet.ballBuildings[task.key];
-                            if (currentCount >= hybridCap) {
-                                completed.push(i);
-                                return;
-                            }
+                        // Enforce building cap at build time
+                        const buildCap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : 200;
+                        const currentCount = task.type === 'rubber' ? planet.rubberBuildings[task.key] : planet.ballBuildings[task.key];
+                        if (currentCount >= buildCap) {
+                            completed.push(i);
+                            return;
                         }
                         game.balls -= cost;
                         if (task.type === 'rubber') planet.rubberBuildings[task.key]++;
@@ -2218,7 +2217,7 @@
 
             if (!bestPlanet) return null;
             const planet = bestPlanet;
-            const cap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : Infinity;
+            const cap = planet.role === 'hybrid' ? 25 + eff.hybridCapAdd : 200;
 
             if (planet.role === 'rubber') {
                 // Rubber world: build the stage with the fewest effective buildings
@@ -2226,7 +2225,7 @@
                 Object.keys(rubberBuildingData).forEach(key => {
                     if (game.totalBalls < rubberBuildingData[key].unlockAt) return;
                     const effective = planet.rubberBuildings[key] + getPending(bestIndex, 'rubber', key);
-                    if (effective < minCount && underCeiling(rubberBuildCost(key, effective))) {
+                    if (effective < cap && effective < minCount && underCeiling(rubberBuildCost(key, effective))) {
                         minCount = effective;
                         minStage = key;
                     }
@@ -2239,6 +2238,7 @@
                     if (game.totalBalls < ballBuildingData[key].unlockAt) return;
                     if (key === 'cosmicHarvester' && game.cosmic.currentTier < 2) return;
                     const effective = planet.ballBuildings[key] + getPending(bestIndex, 'ball', key);
+                    if (effective >= cap) return;
                     const cost = ballBuildCost(key, effective);
                     if (cost < bestCost && underCeiling(cost)) { bestCost = cost; bestKey = key; }
                 });
@@ -3195,8 +3195,8 @@
             // --- Update dynamic content without rebuilding DOM ---
             game.planets.forEach((planet, index) => {
                 const roleClass = planet.role === 'rubber' ? 'role-rubber' : planet.role === 'ball' ? 'role-ball' : 'role-hybrid';
-                const bonusText = planet.role === 'rubber' ? ` (${(1.5 + eff.specialBonus).toFixed(2)}x rubber)` :
-                                 planet.role === 'ball' ? ` (${(1.5 + eff.specialBonus).toFixed(2)}x balls)` :
+                const bonusText = planet.role === 'rubber' ? ` (${(1.5 + eff.specialBonus).toFixed(2)}x rubber, cap: 200)` :
+                                 planet.role === 'ball' ? ` (${(1.5 + eff.specialBonus).toFixed(2)}x balls, cap: 200)` :
                                  ` (cap: ${25 + eff.hybridCapAdd})`;
 
                 const roleSpan = container.querySelector(`[data-role-span="${index}"]`);
