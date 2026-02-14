@@ -3224,48 +3224,6 @@ function renderCosmic() {
 		});
 	}
 
-	// Collapse Universe button + SP preview
-	if (game.cosmic.currentTier >= CELESTIAL_TIERS.length && !game.sandbox) {
-		let spPreview = document.getElementById('sp-preview');
-		if (!spPreview) {
-			spPreview = document.createElement('div');
-			spPreview.id = 'sp-preview';
-			spPreview.style.cssText = 'margin-top: 15px; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--color-warning); background: rgba(245, 158, 11, 0.1);';
-			container.appendChild(spPreview);
-		}
-		const preview = calculateSpPreview();
-		const runMins = Math.floor(preview.runTime / 60);
-		const runSecs = Math.floor(preview.runTime % 60);
-		const bestText = game.prestige.bestTime === Infinity ? 'none' : Math.floor(game.prestige.bestTime) + 's';
-		let previewText = `Collapse now for ${preview.total} SP (base: ${preview.base}`;
-		if (preview.speedBonus > 0) previewText += `, speed bonus: +${preview.speedBonus}`;
-		previewText += `)`;
-		previewText += `\nRun time: ${runMins}m ${runSecs}s | Best: ${bestText}`;
-		if (preview.speedBonus === 0 && game.prestige.bestTime !== Infinity) {
-			previewText += ` | Beat your best time for bonus SP!`;
-		}
-		spPreview.style.whiteSpace = 'pre-line';
-		spPreview.style.color = 'var(--color-warning)';
-		spPreview.style.fontWeight = '600';
-		spPreview.textContent = previewText;
-
-		let collapseBtn = document.getElementById('collapse-btn');
-		if (!collapseBtn) {
-			collapseBtn = document.createElement('button');
-			collapseBtn.id = 'collapse-btn';
-			collapseBtn.className = 'btn';
-			collapseBtn.style.marginTop = '10px';
-			collapseBtn.style.background = 'var(--color-warning)';
-			collapseBtn.textContent = 'Collapse Universe (Prestige Reset)';
-			collapseBtn.addEventListener('click', () => {
-				const p = calculateSpPreview();
-				if (confirm(`Collapse the universe for ${p.total} SP? You will lose all balls, buildings, planets, and upgrades. Achievements and prestige upgrades persist.`)) {
-					performPrestigeReset();
-				}
-			});
-			container.appendChild(collapseBtn);
-		}
-	}
 }
 
 function renderPrestige() {
@@ -3306,6 +3264,59 @@ function renderPrestige() {
 		const treeDiv = document.createElement('div');
 		treeDiv.id = 'prestige-tree';
 		container.appendChild(treeDiv);
+	}
+
+	const showCollapse = game.cosmic.currentTier >= CELESTIAL_TIERS.length && !game.sandbox;
+	let spPreview = document.getElementById('sp-preview');
+	let collapseBtn = document.getElementById('collapse-btn');
+	if (showCollapse) {
+		if (!spPreview) {
+			spPreview = document.createElement('div');
+			spPreview.id = 'sp-preview';
+			spPreview.style.cssText = 'margin-top: 15px; padding: 12px 15px; border-radius: 6px; border: 1px solid var(--color-warning); background: rgba(245, 158, 11, 0.1);';
+		}
+		const preview = calculateSpPreview();
+		const runMins = Math.floor(preview.runTime / 60);
+		const runSecs = Math.floor(preview.runTime % 60);
+		const bestText = game.prestige.bestTime === Infinity ? 'none' : Math.floor(game.prestige.bestTime) + 's';
+		let previewText = `Collapse now for ${preview.total} SP (base: ${preview.base}`;
+		if (preview.speedBonus > 0) previewText += `, speed bonus: +${preview.speedBonus}`;
+		previewText += `)`;
+		previewText += `\nRun time: ${runMins}m ${runSecs}s | Best: ${bestText}`;
+		if (preview.speedBonus === 0 && game.prestige.bestTime !== Infinity) {
+			previewText += ` | Beat your best time for bonus SP!`;
+		}
+		spPreview.style.whiteSpace = 'pre-line';
+		spPreview.style.color = 'var(--color-warning)';
+		spPreview.style.fontWeight = '600';
+		spPreview.textContent = previewText;
+
+		if (!collapseBtn) {
+			collapseBtn = document.createElement('button');
+			collapseBtn.id = 'collapse-btn';
+			collapseBtn.className = 'btn';
+			collapseBtn.style.marginTop = '10px';
+			collapseBtn.style.background = 'var(--color-warning)';
+			collapseBtn.textContent = 'Collapse Universe (Prestige Reset)';
+			collapseBtn.addEventListener('click', () => {
+				const p = calculateSpPreview();
+				if (confirm(`Collapse the universe for ${p.total} SP? You will lose all balls, buildings, planets, and upgrades. Achievements and prestige upgrades persist.`)) {
+					performPrestigeReset();
+				}
+			});
+		}
+		const spDisplay = document.getElementById('sp-display');
+		if (spDisplay && spPreview.parentElement !== container) {
+			container.insertBefore(spPreview, spDisplay);
+		}
+		if (spDisplay && collapseBtn.parentElement !== container) {
+			container.insertBefore(collapseBtn, spDisplay);
+		}
+		if (spPreview) spPreview.style.display = '';
+		if (collapseBtn) collapseBtn.style.display = '';
+	} else {
+		if (spPreview) spPreview.style.display = 'none';
+		if (collapseBtn) collapseBtn.style.display = 'none';
 	}
 
 	const spDisplay = document.getElementById('sp-display');
