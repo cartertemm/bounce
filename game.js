@@ -2009,9 +2009,10 @@ function updateDisplay(forceFull) {
 		synergyText + empireText;
 	const hasRubberWorld = game.planets.some(planet => planet.role === 'rubber');
 	const hasBallWorld = game.planets.some(planet => planet.role === 'ball');
+	const hasHybridWorld = game.planets.some(planet => planet.role === 'hybrid');
 	const rubberFlowStat = document.getElementById('stat-rubber-flow');
 	if (rubberFlowStat) {
-		rubberFlowStat.style.display = hasRubberWorld && hasBallWorld ? '' : 'none';
+		rubberFlowStat.style.display = hasRubberWorld && (hasBallWorld || hasHybridWorld) ? '' : 'none';
 		const rubberFlow = document.getElementById('rubber-flow-display');
 		if (rubberFlow) {
 			rubberFlow.textContent = `Supply ${formatNumber(rps)}/s | Demand ${formatNumber(rubberDemand)}/s`;
