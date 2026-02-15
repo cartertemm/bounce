@@ -814,7 +814,7 @@ const milestones = [
 	{ id: 'achievements', test: () => game.totalBalls >= 10, title: 'Achievements!', desc: 'Track your progress.', show: ['#achievements-panel'] },
 	{ id: 'stat_rubber', test: () => game.totalBalls >= 200, show: ['#stat-rubber', '#stat-rps'] },
 	{ id: 'rubber_panel', test: () => game.totalBalls >= 200, title: 'Rubber Supply Chain Unlocked!', desc: 'The full rubber pipeline is yours to command.', show: ['#rubber-panel'] },
-	{ id: 'stat_bps', test: () => game.totalBalls >= 50000, show: ['#stat-bps'] },
+	{ id: 'stat_bps', test: () => game.upgrades.auto1 && game.upgrades.auto1.purchased, show: ['#stat-bps'] },
 	{ id: 'ball_panel', test: () => game.totalBalls >= 50000, title: 'Ball Factory Unlocked!', desc: 'Automated ball production begins!', show: ['#production-panel'] },
 	{ id: 'advancedFactory', test: () => game.totalBalls >= 150000, title: 'Advanced Factory Unlocked!', desc: 'High-efficiency manufacturing.' },
 	{ id: 'sentientHive', test: () => game.totalBalls >= 500000, title: 'Sentient Ball Hive Unlocked!', desc: 'The balls... are alive?' },
