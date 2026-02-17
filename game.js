@@ -474,6 +474,24 @@ function announceAssertive(message) {
 	elem.textContent = message;
 }
 
+function updateStatRowA11y(rowId, label, valueText) {
+	const row = document.getElementById(rowId);
+	if (!row) return;
+	const combined = `${label}: ${valueText}`;
+	row.setAttribute('role', 'text');
+	row.setAttribute('aria-label', combined);
+	row.querySelectorAll('.stat-label, .stat-value').forEach(el => {
+		el.setAttribute('aria-hidden', 'true');
+	});
+	let a11yText = row.querySelector('.stat-a11y-text');
+	if (!a11yText) {
+		a11yText = document.createElement('span');
+		a11yText.className = 'visually-hidden stat-a11y-text';
+		row.appendChild(a11yText);
+	}
+	a11yText.textContent = combined;
+}
+
 // Aggregation functions
 function getAllRubberBuildings() {
 	const totals = { extractor: 0, cracker: 0, reactor: 0, mixer: 0, press: 0, forming: 0 };
@@ -904,6 +922,7 @@ function updateNextStage() {
 	el.style.display = '';
 	const remaining = next.threshold - game.totalBalls;
 	textEl.textContent = next.name + ' (' + formatNumber(remaining) + ' more balls)';
+	updateStatRowA11y('next-stage', 'Next Stage', textEl.textContent);
 }
 
 function checkMilestones() {
@@ -2153,6 +2172,15 @@ function updateDisplay(forceFull) {
 	document.getElementById('planet-count').textContent = `${game.planets.length} colonized` +
 		(game.probes.discoveredPlanets.length > 0 ? ` / ${game.probes.discoveredPlanets.length} discovered` : '') +
 		synergyText + empireText;
+
+	updateStatRowA11y('stat-balls', 'Bouncy Balls', formatNumber(game.balls));
+	updateStatRowA11y('stat-bps', 'Balls per Second', formatNumber(bps));
+	updateStatRowA11y('stat-rubber', 'Rubber', formatNumber(selectedPlanet ? selectedPlanet.rubber : 0) +
+		(game.planets.length > 1 ? ` (total: ${formatNumber(game.rubber)})` : ''));
+	updateStatRowA11y('stat-rps', 'Rubber per Second', formatNumber(rps));
+	updateStatRowA11y('stat-planets', 'Total Planets', `${game.planets.length} colonized` +
+		(game.probes.discoveredPlanets.length > 0 ? ` / ${game.probes.discoveredPlanets.length} discovered` : '') +
+		synergyText + empireText);
 	const hasRubberWorld = game.planets.some(planet => planet.role === 'rubber');
 	const hasBallWorld = game.planets.some(planet => planet.role === 'ball');
 	const hasHybridWorld = game.planets.some(planet => planet.role === 'hybrid');
@@ -2162,6 +2190,7 @@ function updateDisplay(forceFull) {
 		const rubberFlow = document.getElementById('rubber-flow-display');
 		if (rubberFlow) {
 			rubberFlow.textContent = `Supply ${formatNumber(rps)}/s | Demand ${formatNumber(rubberDemand)}/s`;
+			updateStatRowA11y('stat-rubber-flow', 'Global Rubber Flow', rubberFlow.textContent);
 		}
 	}
 
